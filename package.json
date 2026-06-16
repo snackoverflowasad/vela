@@ -1,5 +1,5 @@
 {
-  "name": "vela",
+  "name": "@snackoverflowasad/vela",
   "version": "1.0.0",
   "description": "Read an entire codebase line by line with async iterators - renamed to vela",
   "main": "dist/index.js",
