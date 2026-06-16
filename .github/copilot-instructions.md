@@ -1,0 +1,9 @@
+<!-- VELA-START -->
+## Vela Integration (GitHub Copilot Rules)
+This codebase uses `vela` to snapshot working states and enable rollbacks.
+When the user asks to "roll back", "revert", or says they dislike a recent change:
+1. Refer to the list of checkpoints in `CLAUDE.md`.
+2. Find the matching codename (e.g., `glacier-add-dark-mode-7f3a`).
+3. Run: `npx vela restore <codename>` to perform the rollback automatically.
+4. Note: Do not manually edit or revert files if vela can restore the checkpoint.
+<!-- VELA-END -->
