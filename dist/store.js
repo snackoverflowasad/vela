@@ -182,7 +182,7 @@ function createCheckpoint(rootDir, store, opts) {
             diffs[relPath] = fd;
         }
     }
-    // Save changes under .vela/changes/<codename>.json (AI-readable format)
+    // Save changes under .vela/changes/<codename>.json (AI-readable format + full restore contents)
     const changesDir = path.join(storeDir(rootDir), 'changes');
     fs.mkdirSync(changesDir, { recursive: true });
     fs.writeFileSync(path.join(changesDir, `${codename}.json`), JSON.stringify({
@@ -192,6 +192,7 @@ function createCheckpoint(rootDir, store, opts) {
         description: opts.description,
         createdAt: new Date().toISOString(),
         changes: diffs,
+        files,
     }, null, 2), 'utf8');
     // Strip content of older checkpoints to keep store.json extremely small
     for (const cp of store.checkpoints) {
@@ -219,6 +220,30 @@ function createCheckpoint(rootDir, store, opts) {
 }
 /** Resolve a codename OR id OR partial match → Checkpoint */
 function resolveCheckpoint(store, ref) {
+    const history = getHistory(store);
+    if (history.length === 0)
+        return null;
+    const normalized = ref.toLowerCase().trim();
+    // Alias checks
+    if (normalized === 'last' || normalized === 'head' || normalized === 'latest') {
+        return history[0];
+    }
+    if (normalized === 'prev') {
+        return history[1] ?? null;
+    }
+    // Matches last~1, head~1, prev~1, last-1, head-1, prev-1
+    const tildeDashMatch = normalized.match(/^(last|head|prev)[~-]([0-9]+)$/);
+    if (tildeDashMatch) {
+        const num = parseInt(tildeDashMatch[2], 10);
+        const baseOffset = tildeDashMatch[1] === 'prev' ? 1 : 0;
+        return history[num + baseOffset] ?? null;
+    }
+    // Matches ~1, ~2, etc.
+    const tildeMatch = normalized.match(/^~([0-9]+)$/);
+    if (tildeMatch) {
+        const num = parseInt(tildeMatch[1], 10);
+        return history[num - 1] ?? null;
+    }
     // Exact id or codename
     const id = store.index[ref];
     if (id)
@@ -232,10 +257,21 @@ function resolveCheckpoint(store, ref) {
 /** Restore all files from a checkpoint to disk */
 function restoreCheckpoint(checkpoint, rootDir) {
     const restored = [];
+    // Try loading content from changes file if store has it stripped
+    let fullFiles = {};
+    const changesPath = path.join(storeDir(rootDir), 'changes', `${checkpoint.codename}.json`);
+    if (fs.existsSync(changesPath)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(changesPath, 'utf8'));
+            fullFiles = data.files || {};
+        }
+        catch { }
+    }
     for (const [relPath, state] of Object.entries(checkpoint.files)) {
         const fullPath = path.join(path.resolve(rootDir), relPath);
         fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-        fs.writeFileSync(fullPath, state.content, 'utf8');
+        const content = state.content || fullFiles[relPath]?.content || '';
+        fs.writeFileSync(fullPath, content, 'utf8');
         restored.push(fullPath);
     }
     return restored;

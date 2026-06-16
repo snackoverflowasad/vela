@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const index_1 = require("./index");
 const snapshot_1 = require("./snapshot");
@@ -294,8 +295,19 @@ function cmdShow() {
         Object.keys(checkpoint.files).forEach(f => console.error(`  - ${f}`));
         process.exit(1);
     }
+    let fileContent = fileState.content;
+    if (!fileContent) {
+        const changesPath = path.join(rootDir, '.vela', 'changes', `${checkpoint.codename}.json`);
+        if (fs.existsSync(changesPath)) {
+            try {
+                const data = JSON.parse(fs.readFileSync(changesPath, 'utf8'));
+                fileContent = data.files[relPath]?.content || '';
+            }
+            catch { }
+        }
+    }
     console.log(`\n${color('36', 'File:')} ${relPath} (${color('2', `Checkpoint: ${checkpoint.codename}`)})\n`);
-    const lines = fileState.content.split('\n');
+    const lines = fileContent.split('\n');
     lines.forEach((line, i) => {
         console.log(`${color('2', String(i + 1).padStart(4) + ' |')} ${line}`);
     });
@@ -335,14 +347,25 @@ function cmdDiff() {
         totalRemoved: 0,
         totalFilesChanged: 0,
     };
+    // Load full content from changes file if store has it stripped
+    let fullFiles = {};
+    const changesPath = path.join(rootDir, '.vela', 'changes', `${checkpoint.codename}.json`);
+    if (fs.existsSync(changesPath)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(changesPath, 'utf8'));
+            fullFiles = data.files || {};
+        }
+        catch { }
+    }
     for (const relPath of filesToDiff) {
         const fileState = checkpoint.files[relPath];
         const fullPath = path.join(rootDir, relPath);
+        const fileContent = fileState?.content || fullFiles[relPath]?.content || '';
         const beforeSnap = fileState ? {
             file: fullPath,
             capturedAt: checkpoint.createdAt,
             hash: fileState.hash,
-            lines: fileState.content.split('\n'),
+            lines: fileContent.split('\n'),
         } : null;
         const afterSnap = (0, snapshot_1.snapshotFile)(fullPath);
         const fd = (0, diff_1.diffSnapshots)(beforeSnap, afterSnap, fullPath);
