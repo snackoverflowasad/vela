@@ -1,0 +1,32 @@
+{
+  "name": "vela",
+  "version": "1.0.0",
+  "description": "Read an entire codebase line by line with async iterators - renamed to vela",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "vela": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
+  },
+  "keywords": [
+    "codebase",
+    "reader",
+    "ast",
+    "files",
+    "cli"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/diff": "^7.0.2",
+    "@types/node": "^25.9.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "diff": "^5.0.0"
+  }
+}
