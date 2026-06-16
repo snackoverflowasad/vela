@@ -30,4 +30,5 @@ yarn-error.log*
 
 # Vela storage and caches
 .vela/
+.codetracker/
 .codebase-reader/
