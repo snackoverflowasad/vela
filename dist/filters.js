@@ -5,6 +5,7 @@ exports.buildIgnoreDirs = buildIgnoreDirs;
 exports.DEFAULT_IGNORE_DIRS = new Set([
     'node_modules',
     '.git',
+    '.vela',
     '.svn',
     '.hg',
     'dist',
